@@ -17,7 +17,32 @@
 
 #include "ofMain.h"
 #include "IldaFile.h"
-#include "ofxIldaFileColorList.hpp"
+#include "ofxIldaFileColor.hpp"
+
+struct ofxIldaFileSettings {
+    int startBlankingCount = 30;
+    int startNotMoveBlankingCount = 11;
+    int endBlankingCount = 16;
+    string frameName = "frame   ";
+    string companyName = "company ";
+    int projectorID = 0;
+    
+    ofxIldaFileSettings(){}
+    
+    // copy constructor
+    ofxIldaFileSettings(const ofxIldaFileSettings& _settings) {
+        startBlankingCount = _settings.startBlankingCount;
+        startNotMoveBlankingCount = _settings.startNotMoveBlankingCount;
+        endBlankingCount = _settings.endBlankingCount;
+        frameName = _settings.frameName;
+        companyName = _settings.companyName;
+        projectorID = _settings.projectorID;
+        
+        if (startBlankingCount < startNotMoveBlankingCount) {
+            startNotMoveBlankingCount = startBlankingCount / 2;
+        }
+    }
+};
 
 class ofxIldaFile {
 public:
@@ -27,50 +52,27 @@ public:
     };
     using LinesInOneFrame = vector<ColorPolyline>;
     
-    void draw(int frame, bool usingIldaFileColorList = false);
-    void save(string filepath, ofVec3f resizeFromMin = ofVec3f(0, 0, 0), ofVec3f resizeFromMax = ofVec3f(100, 100, 0));
-    bool load(string filepath, ofVec3f resizeToMin = ofVec3f(0, 0, 0), ofVec3f resizeToMax = ofVec3f(100, 100, 0));
-    void clear() {
-        lineFrameList.clear();
-    }
+    bool load(vector<LinesInOneFrame>& lineFrameList,
+              string filepath,
+              ofVec3f resizeToMin = ofVec3f(0, 0, 0),
+              ofVec3f resizeToMax = ofVec3f(100, 100, 0));
+    void save(const vector<LinesInOneFrame>& lineFrameList,
+              string filepath,
+              ofVec3f resizeFromMin = ofVec3f(0, 0, 0),
+              ofVec3f resizeFromMax = ofVec3f(100, 100, 0));
     
-    // lineFrameList
-    vector<LinesInOneFrame>& getLineFrameList() { return lineFrameList; }
-    LinesInOneFrame & getLinesInOneFrame(int frame);
-    ColorPolyline& getLinesInOneFrame(int frame, int indexInOneFrame);
-    
-    static const vector<ofFloatColor>& getColorList() {return ildaFileColorList.get();}
-    
-    // getter
-    int getStartNotMoveBlankingCount() { return startNotMoveBlankingCount; }
-    int getStartBlankingCount() { return startBlankingCount; }
-    int getEndBlankingCount() { return endBlankingCount; }
-    
-    // setter
-    void setStartBlankingCount(int blankingCount, int notMoveBlankingCount) {
-        startNotMoveBlankingCount = notMoveBlankingCount;
-        setStartBlankingCount(blankingCount);
-    }
-    void setStartBlankingCount(int blankingCount) {
-        startBlankingCount = blankingCount;
-        if (startBlankingCount < startNotMoveBlankingCount) {
-            startNotMoveBlankingCount = startBlankingCount / 2;
-        }
-    }
-    void setEndBlankingCount(int blankingCount) { endBlankingCount = blankingCount; }
+    void draw(const vector<LinesInOneFrame>& lineFrameList, int frame, bool usingIldaFileColorList = false);
+
+    void setIldaFileSettings(const ofxIldaFileSettings& settings) { this->settings = settings; }
+    const ofxIldaFileSettings& getIldaFileSettings() { return settings; }
     
 private:
-    static ofxIldaFileColorList ildaFileColorList;
-    
-    vector<LinesInOneFrame> lineFrameList;
-    
-    int startBlankingCount = 30;
-    int startNotMoveBlankingCount = 11;
-    int endBlankingCount = 16;
-    
-    unique_ptr<string> frameName;
-    unique_ptr<string> companyName;
-    unique_ptr<int> projectorID;
+    IldaFile::FormatHeader getFormatHeader(const vector<LinesInOneFrame>& lineFrameList, int frame);
+    ofVec3f getBlankingStartPoint(const vector<LinesInOneFrame>& lineFrameList, int frame, int lineIndex);
+    ofVec3f getBlankingEndPoint(const vector<LinesInOneFrame>& lineFrameList, int frame, int lineIndex);
+
+    ofxIldaFileColor ildaFileColor;
+    ofxIldaFileSettings settings;
 };
 
 #endif /* ofxIldaFile_h */

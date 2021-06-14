@@ -1,18 +1,20 @@
 //
-//  ofxIldaFileColorList.hpp
+//  ofxIldaFileColor.hpp
 //  pdfToIldaFile
 //
 //  Created by migizo on 2021/06/13.
 //
 
-#ifndef ofxIldaFileColorList_hpp
-#define ofxIldaFileColorList_hpp
+#ifndef ofxIldaFileColor_hpp
+#define ofxIldaFileColor_hpp
 
 #include "ofMain.h"
 
-class ofxIldaFileColorList {
+class ofxIldaFileColor {
 public:
-    ofxIldaFileColorList() {
+    ofxIldaFileColor() {
+        if (! colorList.empty()) return;
+        
         // https://www.ilda.com/resources/StandardsDocs/ILDA_IDTF14_rev011.pdf
         colorList.resize(64);
         
@@ -31,11 +33,11 @@ public:
         }
     }
     
-    vector<ofFloatColor> get() {
+    const vector<ofFloatColor>& list() {
         return colorList;
     }
     
-    int getNearestColorIndex(ofFloatColor color) {
+    const int getNearestColorIndex(ofFloatColor color) {
         // hueAngleとsatuationを二次元のベクトルとして一番近いのを取得
         float hueAngle = color.getHueAngle() / 360.0f; // 0-360
         float satuation = color.getSaturation();
@@ -55,7 +57,7 @@ public:
     }
     
 private:
-    vector<ofFloatColor> colorList;
+    static vector<ofFloatColor> colorList;
 };
 
-#endif /* ofxIldaFileColorList_hpp */
+#endif /* ofxIldaFileColor_hpp */

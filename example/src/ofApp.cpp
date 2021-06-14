@@ -2,13 +2,12 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    ildaFile.load(ofFilePath::getAbsolutePath("test.ild"), ofVec2f::zero(), polysize);
+    ildaFile.load(lineFrameList, ofFilePath::getAbsolutePath("test.ild"), ofVec2f::zero(), polysize);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
     
-    vector<ofxIldaFile::LinesInOneFrame>& lineFrameList = ildaFile.getLineFrameList();
     for (int i = 0; i < lineFrameList.size(); i++) {
         for (int j = 0; j < lineFrameList[i].size(); j++) {
             for (int k = 0; k < lineFrameList[i][j].poly.size(); k++) {
@@ -24,9 +23,9 @@ void ofApp::draw(){
     ofDrawBitmapString("key[s]: save.\nkey[l]: load", 20, ofGetHeight() - 20);
     
     static int _frame = 0;
-    ildaFile.draw(_frame);
-    if (! ildaFile.getLineFrameList().empty()) {
-        _frame = (_frame + 1) % ildaFile.getLineFrameList().size();
+    ildaFile.draw(lineFrameList, _frame);
+    if (! lineFrameList.empty()) {
+        _frame = (_frame + 1) % lineFrameList.size();
     }
 }
 
@@ -38,10 +37,10 @@ void ofApp::keyPressed(int key){
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
     if (key == 's') {
-        ildaFile.save(ofFilePath::getAbsolutePath("testNoise.ild"), ofVec2f::zero(), polysize);
+        ildaFile.save(lineFrameList, ofFilePath::getAbsolutePath("testNoise.ild"), ofVec2f::zero(), polysize);
     }
     if (key == 'l') {
-        ildaFile.load(ofFilePath::getAbsolutePath("test.ild"), ofVec2f::zero(), polysize);
+        ildaFile.load(lineFrameList, ofFilePath::getAbsolutePath("test.ild"), ofVec2f::zero(), polysize);
     }
 }
 

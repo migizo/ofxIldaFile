@@ -5,4 +5,5 @@
 //  Created by migizo on 2021/06/13.
 //
 
-#include "ofxIldaFileColorList.hpp"
+#include "ofxIldaFileColor.hpp"
+vector<ofFloatColor> ofxIldaFileColor::colorList;

@@ -94,6 +94,15 @@ public:
         return resizeList;
     }
     //--------------------------------------------------------------
+    static Header getIldaFileHeader(int formatCode) {
+        Header ildaHeader;
+        sprintf(ildaHeader.ilda, "ILDA");
+        sprintf(ildaHeader.zero3, "000");
+        ildaHeader.formatCode = formatCode;
+        return ildaHeader;
+    }
+
+    //--------------------------------------------------------------
     vector<Image3d> image3dList;
 
 private:

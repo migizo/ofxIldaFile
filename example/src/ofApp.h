@@ -23,5 +23,7 @@ public:
     void gotMessage(ofMessage msg);
 		
     ofxIldaFile ildaFile;
+    vector<ofxIldaFile::LinesInOneFrame> lineFrameList;
+
     const ofVec2f polysize = ofVec2f(300, 300);
 };
