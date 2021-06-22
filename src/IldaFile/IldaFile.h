@@ -125,7 +125,7 @@ private:
     template<class T>
     bool write(T val, FILE* f) {
         int size = sizeof(val);
-        cout << byteCount << ", " << size << ", " << val << endl;
+//        cout << byteCount << ", " << size << ", " << val << endl;
         byteCount += sizeof(val);
         return fwrite(&val, sizeof(val), 1, f) >= 1;
     }

@@ -66,11 +66,19 @@ public:
     void setIldaFileSettings(const ofxIldaFileSettings& settings) { this->settings = settings; }
     const ofxIldaFileSettings& getIldaFileSettings() { return settings; }
     
+    void setPosition(IldaFile::Image3dData& image3dData, ofVec3f v) {
+        image3dData.x = v.x;
+        image3dData.y = v.y;
+        image3dData.z = v.z;
+    };
 private:
     IldaFile::FormatHeader getFormatHeader(const vector<LinesInOneFrame>& lineFrameList, int frame);
     ofVec3f getBlankingStartPoint(const vector<LinesInOneFrame>& lineFrameList, int frame, int lineIndex);
     ofVec3f getBlankingEndPoint(const vector<LinesInOneFrame>& lineFrameList, int frame, int lineIndex);
+    const vector<IldaFile::Image3dData> getStartBlankingDataList(ofVec3f blankingStartPoint, ofVec3f polyStartPoint);
+    const vector<IldaFile::Image3dData> getEndBlankingDataList(ofVec3f blankingEndPoint, ofVec3f polyEndPoint);
 
+    
     ofxIldaFileColor ildaFileColor;
     ofxIldaFileSettings settings;
 };

@@ -12,13 +12,13 @@ void ofxIldaFile::draw(const vector<ofxIldaFile::LinesInOneFrame>& lineFrameList
     if (lineFrameList.empty()) return;
     if (frame < 0 || frame > lineFrameList.size() - 1) return;
     
-    for (int j = 0; j < lineFrameList[frame].size(); j++) {
+    for (int lineIndex = 0; lineIndex < lineFrameList[frame].size(); lineIndex++) {
         if (usingIldaFileColorList) {
-            int colorIndex = ildaFileColor.getNearestColorIndex( lineFrameList[frame][j].color);
+            int colorIndex = ildaFileColor.getNearestColorIndex( lineFrameList[frame][lineIndex].color);
             ildaFileColor.list()[colorIndex];
         }
-        else ofSetColor(lineFrameList[frame][j].color);
-        lineFrameList[frame][j].poly.draw();
+        else ofSetColor(lineFrameList[frame][lineIndex].color);
+        lineFrameList[frame][lineIndex].poly.draw();
     }
 }
 
@@ -100,12 +100,6 @@ void ofxIldaFile::save(const vector<ofxIldaFile::LinesInOneFrame>& lineFrameList
     int frameTotal = lineFrameList.size();
     vector<IldaFile::Image3d> ildaList(frameTotal);
     
-    auto setPosition = [](IldaFile::Image3dData& image3dData, ofVec3f v) {
-        image3dData.x = v.x;
-        image3dData.y = v.y;
-        image3dData.z = v.z;
-    };
-    
     // 指定フレーム分,ildaFileにセット
     for (int i = 0; i < frameTotal; i++) {
         
@@ -117,38 +111,23 @@ void ofxIldaFile::save(const vector<ofxIldaFile::LinesInOneFrame>& lineFrameList
         
         // polyline,colorをilda用に変換
         // blankも追加
-        for (int j = 0; j < lineFrameList[i].size(); j++) {
-            ofPolyline currentPoly = lineFrameList[i][j].poly;
+        for (int lineIndex = 0; lineIndex < lineFrameList[i].size(); lineIndex++) {
+            ofPolyline currentPoly = lineFrameList[i][lineIndex].poly;
             
-            ofVec3f blankingStartPoint = getBlankingStartPoint(lineFrameList, i, j);
-            ofVec3f blankingEndPoint = getBlankingEndPoint(lineFrameList, i, j);
+            ofVec3f blankingStartPoint = getBlankingStartPoint(lineFrameList, i, lineIndex);
+            ofVec3f blankingEndPoint = getBlankingEndPoint(lineFrameList, i, lineIndex);
             
-            // blanking
-            for (int k = 0; k < settings.startBlankingCount; k++) {
-                bool isNotMove = (j < settings.startNotMoveBlankingCount);
-
-                IldaFile::Image3dData image3dData;
-                image3dData.colorInfo = 0;
-                image3dData.isLastPoint = false;
-                image3dData.isShouldBlanking = true;
-                if (isNotMove) {
-                    setPosition(image3dData, blankingStartPoint);
-                }
-                else {
-                    float f = ofMap(k, settings.startNotMoveBlankingCount, settings.startBlankingCount, 0.0f, 1.0f);
-                    ofVec3f v = blankingStartPoint.getInterpolated(currentPoly.getVertices()[0], f);
-                    setPosition(image3dData, v);
-                }
-                ildaPointList.push_back(image3dData);
-            }
+            // blank start
+            auto sbdList = getStartBlankingDataList(blankingStartPoint, currentPoly.getVertices()[0]);
+            ildaPointList.insert(ildaPointList.end(), sbdList.begin(), sbdList.end());
             
             // polyline
-            for (int k = 0; k < lineFrameList[i][j].poly.size(); k++) {
-                auto v = lineFrameList[i][j].poly.getVertices()[k];
+            for (int k = 0; k < lineFrameList[i][lineIndex].poly.size(); k++) {
+                auto v = lineFrameList[i][lineIndex].poly.getVertices()[k];
 
                 IldaFile::Image3dData image3dData;
                 setPosition(image3dData, v);
-                image3dData.colorInfo = ildaFileColor.getNearestColorIndex( lineFrameList[i][j].color);
+                image3dData.colorInfo = ildaFileColor.getNearestColorIndex( lineFrameList[i][lineIndex].color);
                 
                 image3dData.isLastPoint = false;
                 image3dData.isShouldBlanking = false;
@@ -156,22 +135,25 @@ void ofxIldaFile::save(const vector<ofxIldaFile::LinesInOneFrame>& lineFrameList
             }
             
             // blank end
-            for (int k = 0; k < settings.endBlankingCount; k++) {
-                IldaFile::Image3dData image3dData;
-                image3dData.colorInfo = 0;
-                image3dData.isLastPoint = false;
-                image3dData.isShouldBlanking = true;
-                
-                float f = ofMap(k, 0, settings.endBlankingCount, 0.0f, 1.0f);
-                ofVec3f v = currentPoly.getVertices()[currentPoly.size() - 1];
-                v = v.getInterpolated(blankingEndPoint, f);
-                setPosition(image3dData, v);
-                ildaPointList.push_back(image3dData);
-            }
+            auto ebdList = getEndBlankingDataList(blankingEndPoint, currentPoly.getVertices()[currentPoly.size() - 1]);
+            ildaPointList.insert(ildaPointList.end(), ebdList.begin(), ebdList.end());
+        }
+        
+        if (ildaPointList.empty()) {
+            // blank start
+            // TODO: resizeで0がmap範囲無い時の対処
+            auto sbdList = getStartBlankingDataList(ofVec3f::zero(), ofVec3f::zero());
+            ildaPointList.insert(ildaPointList.end(), sbdList.begin(), sbdList.end());
+            
+            // blank end
+            // TODO: resizeで0がmap範囲無い時の対処
+            auto ebdList = getEndBlankingDataList(ofVec3f::zero(), ofVec3f::zero());
+            ildaPointList.insert(ildaPointList.end(), ebdList.begin(), ebdList.end());
         }
         
         ildaPointList[ildaPointList.size() - 1].isLastPoint = true;
-
+        ofLog() << "save: " << ildaPointList.size();
+        
         ildaList[i].header = ildaHeader;
         ildaList[i].formatHeader = formatHeader;
         ildaList[i].formatDataList = ildaPointList;
@@ -191,8 +173,14 @@ IldaFile::FormatHeader ofxIldaFile::getFormatHeader(const vector<LinesInOneFrame
     sprintf(formatHeader.frameName, settings.frameName.c_str());
     sprintf(formatHeader.authorName, settings.companyName.c_str());
     formatHeader.pointTotal = 0;
-    for (int j = 0; j < lineFrameList[frame].size(); j++) {
-        formatHeader.pointTotal += lineFrameList[frame][j].poly.size() + settings.startBlankingCount + settings.endBlankingCount;
+
+    if (lineFrameList[frame].empty()) {
+        formatHeader.pointTotal += settings.startBlankingCount + settings.endBlankingCount;
+    }
+    else {
+        for (int lineIndex = 0; lineIndex < lineFrameList[frame].size(); lineIndex++) {
+            formatHeader.pointTotal += lineFrameList[frame][lineIndex].poly.size() + settings.startBlankingCount + settings.endBlankingCount;
+        }
     }
     formatHeader.frameID = frame;
     formatHeader.frameTotal = lineFrameList.size();
@@ -211,6 +199,7 @@ ofVec3f ofxIldaFile::getBlankingStartPoint(const vector<LinesInOneFrame>& lineFr
     if (isFirstPoly) {
         int prevFrameIndex = (lineFrameList.size() + frame - 1) % lineFrameList.size();
         auto prevFramePolys = lineFrameList[prevFrameIndex];
+        if (prevFramePolys.empty()) return currentPoly.getVertices()[0];
         prevPoly = prevFramePolys[prevFramePolys.size() - 1].poly;
     }
     else prevPoly = lineFrameList[frame][lineIndex - 1].poly;
@@ -230,6 +219,7 @@ ofVec3f ofxIldaFile::getBlankingEndPoint(const vector<LinesInOneFrame>& lineFram
     if (isFinalPoly) {
         int nextFrameIndex = (frame + 1) % lineFrameList.size();
         auto nextFramePolys = lineFrameList[nextFrameIndex];
+        if (nextFramePolys.empty()) return currentPoly.getVertices()[currentPoly.size() - 1];
         nextPoly = nextFramePolys[0].poly;
     }
     else nextPoly = lineFrameList[frame][lineIndex + 1].poly;
@@ -238,4 +228,46 @@ ofVec3f ofxIldaFile::getBlankingEndPoint(const vector<LinesInOneFrame>& lineFram
     blankingEndPoint = blankingEndPoint.getInterpolated(nextPoly.getVertices()[0], 0.5f);
     
     return blankingEndPoint;
+}
+
+//--------------------------------------------------------------
+const vector<IldaFile::Image3dData> ofxIldaFile::getStartBlankingDataList(ofVec3f blankingStartPoint, ofVec3f polyStartPoint) {
+    vector<IldaFile::Image3dData> ildaPointList;
+    for (int pointIndex = 0; pointIndex < settings.startBlankingCount; pointIndex++) {
+        bool isNotMove = (pointIndex < settings.startNotMoveBlankingCount);
+
+        IldaFile::Image3dData image3dData;
+        image3dData.colorInfo = 0;
+        image3dData.isLastPoint = false;
+        image3dData.isShouldBlanking = true;
+        if (isNotMove) {
+            setPosition(image3dData, blankingStartPoint);
+        }
+        else {
+            float f = ofMap(pointIndex, settings.startNotMoveBlankingCount, settings.startBlankingCount, 0.0f, 1.0f);
+            ofVec3f v = blankingStartPoint.getInterpolated(polyStartPoint, f);
+            setPosition(image3dData, v);
+        }
+        ildaPointList.push_back(image3dData);
+    }
+    return ildaPointList;
+}
+
+//--------------------------------------------------------------
+const vector<IldaFile::Image3dData> ofxIldaFile::getEndBlankingDataList(ofVec3f blankingEndPoint, ofVec3f polyEndPoint) {
+    vector<IldaFile::Image3dData> ildaPointList;
+
+    for (int k = 0; k < settings.endBlankingCount; k++) {
+        IldaFile::Image3dData image3dData;
+        image3dData.colorInfo = 0;
+        image3dData.isLastPoint = false;
+        image3dData.isShouldBlanking = true;
+        
+        float f = ofMap(k, 0, settings.endBlankingCount, 0.0f, 1.0f);
+        ofVec3f v = polyEndPoint;
+        v = v.getInterpolated(blankingEndPoint, f);
+        setPosition(image3dData, v);
+        ildaPointList.push_back(image3dData);
+    }
+    return ildaPointList;
 }
